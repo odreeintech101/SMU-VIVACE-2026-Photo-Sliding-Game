@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SMU Vivace · Sliding Puzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Fredoka:wght@500;600;700&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --pink:        #ec4a8a;
+    --pink-deep:   #d32a73;
+    --red:         #e3343a;
+    --red-deep:    #b8262b;
+    --green:       #4cba5a;
+    --green-deep:  #2f9540;
+    --yellow:      #ffd84d;
+    --yellow-deep: #f5b800;
+    --cream:       #fdf6e3;
+    --navy:        #1e2854;
+    --pink-soft:   #f9c5d1;
+    --green-soft:  #d4f0c9;
+    --ink:         #111;
+    --wood-1: #6b5a18;
+    --wood-2: #4a3f10;
+    --frame-red: #c0292e;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    color: var(--navy);
+    font-family: "Fredoka", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body {
+    background:
+      linear-gradient(135deg, var(--green-soft) 0%, var(--green-soft) 45%, transparent 45%, transparent 100%),
+      repeating-linear-gradient(0deg,  rgba(255,255,255,0.55) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0 1px, transparent 1px 44px),
+      repeating-conic-gradient(var(--pink-soft) 0% 25%, var(--cream) 0% 50%) 50% / 88px 88px;
+    background-attachment: fixed;
+  }
+
+  .topbar {
+    background: var(--navy);
+    color: #fff;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar .brand { display: flex; align-items: center; gap: 14px; }
+  .topbar .smu {
+    font-family: "Fredoka", sans-serif;
+    font-weight: 700; font-size: 18px; letter-spacing: 2px;
+  }
+  .topbar .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.35); }
+  .topbar .vivace {
+    font-family: "Bagel Fat One", sans-serif;
+    font-size: 22px; letter-spacing: 1px;
+  }
+  .topbar .vivace sup { font-size: 11px; color: var(--pink); margin-left: 4px; }
+  .topbar .menu { font-size: 14px; letter-spacing: 2px; font-weight: 600; }
+
+  .app {
+    padding: 28px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+
+  /* Torn-paper ransom-note title */
+  .torn {
+    background: #fffdf3;
+    padding: 18px 36px 22px;
+    position: relative;
+    max-width: 760px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    transform: rotate(-1deg);
+    text-align: center;
+    clip-path: polygon(
+      0% 8%, 4% 4%, 9% 9%, 14% 3%, 22% 7%, 28% 2%, 35% 8%, 42% 4%,
+      50% 9%, 58% 3%, 66% 8%, 74% 2%, 82% 8%, 90% 3%, 96% 9%, 100% 5%,
+      100% 92%, 96% 96%, 90% 91%, 82% 97%, 74% 92%, 66% 97%, 58% 91%,
+      50% 96%, 42% 92%, 35% 96%, 28% 91%, 22% 97%, 14% 92%, 9% 96%, 4% 91%, 0% 95%
+    );
+  }
+  .torn h1 {
+    margin: 0;
+    font-family: "Permanent Marker", "Bagel Fat One", cursive;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.05;
+    color: var(--navy);
+    letter-spacing: 1px;
+  }
+  .torn h1 .a { color: #2a3a8c; }
+  .torn h1 .b { color: var(--red); transform: rotate(-4deg); display: inline-block; }
+  .torn h1 .c { color: var(--green-deep); transform: rotate(3deg); display: inline-block; }
+  .torn h1 .d { color: var(--pink-deep); }
+  .torn h1 .e { color: var(--yellow-deep); }
+  .torn h1 .f { color: #6a3aa8; transform: rotate(-2deg); display: inline-block; }
+  .torn p {
+    margin: 6px 0 0;
+    font-weight: 500; color: #555; font-size: 14px;
+  }
+
+  /* Mode + HUD */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .pill {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    padding: 8px 18px;
+    box-shadow: 4px 4px 0 var(--ink);
+    font-weight: 700;
+    color: var(--navy);
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .pill .label {
+    font-size: 11px; letter-spacing: 2px; color: #888; text-transform: uppercase;
+  }
+  .pill .value { font-size: 20px; font-variant-numeric: tabular-nums; }
+
+  /* Image / mode segmented control */
+  .segmented {
+    display: inline-flex;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: 4px 4px 0 var(--ink);
+    gap: 4px;
+  }
+  .segmented button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-family: "Bagel Fat One", "Fredoka", sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: var(--navy);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .segmented button.active {
+    background: var(--navy);
+    color: #fff;
+  }
+
+  button.sticker {
+    appearance: none;
+    cursor: pointer;
+    background: var(--pink);
+    color: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-family: "Bagel Fat One", "Fredoka", sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+  }
+  button.sticker:hover { background: var(--pink-deep); }
+  button.sticker:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  button.sticker.green { background: var(--green); }
+  button.sticker.green:hover { background: var(--green-deep); }
+  button.sticker.yellow { background: var(--yellow); color: var(--navy); }
+  button.sticker.yellow:hover { background: var(--yellow-deep); }
+
+  /* Wooden frame */
+  .frame {
+    padding: 22px;
+    border-radius: 8px;
+    background: repeating-linear-gradient(
+      92deg,
+      #6b5a18 0px, #5a4a14 8px, #443710 18px, #6b5a18 28px, #7a6820 38px
+    );
+    box-shadow:
+      0 0 0 3px #1a1605,
+      0 30px 50px rgba(0,0,0,0.25),
+      inset 0 0 0 4px #2e2708,
+      inset 0 0 26px rgba(0,0,0,0.45);
+    position: relative;
+    transform: rotate(-0.6deg);
+  }
+  .frame::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, var(--frame-red), #8c1c20);
+    box-shadow: inset 0 0 0 2px #5a1014;
+  }
+
+  .board-wrap {
+    --size: min(82vmin, 480px);
+    position: relative;
+    z-index: 1;
+  }
+
+  .board {
+    width: var(--size);
+    height: var(--size);
+    background: #fef8c2;
+    display: grid;
+    gap: 0;
+    border: 3px solid #000;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .board.size-3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+  .board.size-4 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+
+  .cell {
+    position: relative;
+    background: #fff7d6;
+    border: 1.5px solid #000;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.15s ease;
+  }
+  .cell.empty {
+    background: #1a1306;
+    cursor: default;
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.85);
+  }
+  .cell:not(.empty):hover { filter: brightness(1.05); }
+  .cell.movable:not(.empty)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 0 3px rgba(236, 74, 138, 0.85);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .cell.movable:not(.empty):hover::after { opacity: 1; }
+
+  .tile-svg {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+  /* Sized via JS — width/height set to size-N% to fill the cell with the master image */
+
+  /* Floating decorative stickers */
+  .sticker-deco {
+    position: absolute;
+    pointer-events: none;
+    font-family: "Bagel Fat One", sans-serif;
+    color: #fff;
+    text-align: center;
+    line-height: 1;
+    z-index: 3;
+    filter: drop-shadow(2px 3px 0 rgba(0,0,0,0.85));
+  }
+  .price-tag {
+    width: 96px; height: 96px;
+    display: grid; place-items: center;
+    background: var(--yellow);
+    color: var(--navy);
+    border: 3px solid var(--ink);
+    clip-path: polygon(
+      50% 0%, 60% 12%, 75% 5%, 78% 22%, 95% 22%, 88% 38%,
+      100% 50%, 88% 62%, 95% 78%, 78% 78%, 75% 95%, 60% 88%,
+      50% 100%, 40% 88%, 25% 95%, 22% 78%, 5% 78%, 12% 62%,
+      0% 50%, 12% 38%, 5% 22%, 22% 22%, 25% 5%, 40% 12%
+    );
+    transform: rotate(-12deg);
+  }
+  .price-tag .num { font-size: 26px; }
+  .price-tag .label { font-size: 9px; letter-spacing: 1px; margin-top: 2px; color: #555; }
+
+  .blob {
+    width: 110px; height: 110px;
+    background: var(--green); color: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 56% 44% 60% 40% / 50% 60% 40% 50%;
+    display: grid; place-items: center;
+    font-size: 22px;
+    transform: rotate(-8deg);
+    padding: 8px;
+    text-align: center; line-height: 1.05;
+  }
+
+  .deco-1 { top: -28px; left: -42px; }
+  .deco-2 { top: -20px; right: -42px; }
+  .deco-3 { bottom: -34px; left: -38px; transform: rotate(8deg); }
+
+  /* Overlay */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(30, 40, 84, 0.55);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    animation: fadeIn 0.25s ease both;
+  }
+  .overlay.show { display: flex; }
+
+  .modal {
+    background: #fffdf3;
+    border: 4px solid var(--ink);
+    border-radius: 22px;
+    padding: 28px 28px 22px;
+    text-align: center;
+    max-width: 380px;
+    width: calc(100% - 32px);
+    box-shadow: 8px 8px 0 var(--ink);
+    animation: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    position: relative;
+  }
+  .modal::before {
+    content: "SOLVED";
+    position: absolute;
+    top: -22px; right: -22px;
+    width: 88px; height: 88px;
+    background: var(--yellow);
+    color: var(--navy);
+    border: 3px solid var(--ink);
+    font-family: "Bagel Fat One", sans-serif;
+    font-size: 16px;
+    display: grid; place-items: center;
+    transform: rotate(15deg);
+    clip-path: polygon(
+      50% 0%, 60% 12%, 75% 5%, 78% 22%, 95% 22%, 88% 38%,
+      100% 50%, 88% 62%, 95% 78%, 78% 78%, 75% 95%, 60% 88%,
+      50% 100%, 40% 88%, 25% 95%, 22% 78%, 5% 78%, 12% 62%,
+      0% 50%, 12% 38%, 5% 22%, 22% 22%, 25% 5%, 40% 12%
+    );
+  }
+  .modal h2 {
+    margin: 12px 0 6px;
+    font-family: "Bagel Fat One", sans-serif;
+    font-size: 32px;
+    color: var(--pink-deep);
+    -webkit-text-stroke: 1px var(--ink);
+    letter-spacing: 1px;
+  }
+  .modal p { margin: 0 0 18px; color: var(--navy); font-weight: 600; font-size: 15px; }
+  .modal .row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes pop {
+    0%   { transform: scale(0.85) rotate(-2deg); opacity: 0; }
+    100% { transform: scale(1)    rotate(0);     opacity: 1; }
+  }
+
+  .confetti {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 60; overflow: hidden;
+  }
+  .confetti span {
+    position: absolute; width: 12px; height: 12px;
+    background: var(--pink); border: 2px solid var(--ink);
+    animation: fall 1.6s ease-in forwards;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-40px) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0.6; }
+  }
+
+  footer {
+    color: var(--navy); font-weight: 600; font-size: 13px;
+    text-align: center; background: #fff;
+    padding: 6px 14px; border: 2px solid var(--ink);
+    border-radius: 999px; box-shadow: 3px 3px 0 var(--ink);
+    transform: rotate(-1deg);
+  }
+
+  @media (max-width: 600px) {
+    .deco-1, .deco-2, .deco-3 { display: none; }
+    .topbar .vivace { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="smu">🐂 SMU</span>
+    <span class="divider"></span>
+    <span class="vivace">VIVACE<sup>'26</sup></span>
+  </div>
+  <div class="menu">MENU ☰</div>
+</div>
+
+<div class="app">
+
+  <div class="torn">
+    <h1>
+      <span class="a">S</span><span class="b">l</span><span class="c">i</span><span class="d">d</span><span class="e">e</span>
+      <span> </span>
+      <span class="f">V</span><span class="a">i</span><span class="b">v</span><span class="c">a</span><span class="d">c</span><span class="e">e</span>
+    </h1>
+    <p>Sam Loyd's classic — Vivace edition</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="segmented" role="tablist" aria-label="Grid size">
+      <button id="mode3" class="" role="tab">3 × 3</button>
+      <button id="mode4" class="active" role="tab">4 × 4</button>
+    </div>
+    <div class="segmented" role="tablist" aria-label="Image">
+      <button id="imgVivace" class="active" role="tab">VIVACE</button>
+      <button id="imgSmiley" class="" role="tab">SMILEY</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="pill">
+      <span class="label">Moves</span>
+      <span class="value" id="moveCount">0</span>
+    </div>
+    <div class="pill">
+      <span class="label">Time</span>
+      <span class="value" id="timer">00:00</span>
+    </div>
+    <button id="shuffleBtn" class="sticker">SHUFFLE</button>
+    <button id="resetBtn" class="sticker green">RESET</button>
+    <button id="peekBtn" class="sticker yellow">PEEK 👀</button>
+    <label for="uploadInput" class="sticker green" style="display:inline-block;">UPLOAD IMAGE 📷</label>
+    <input id="uploadInput" type="file" accept="image/*" style="display:none;"/>
+  </div>
+
+  <div class="frame">
+    <div class="board-wrap">
+      <div class="board size-4" id="board" aria-label="Sliding puzzle board"></div>
+
+      <div class="sticker-deco price-tag deco-1">
+        <div>
+          <div class="num">$1.49</div>
+          <div class="label">EACH</div>
+        </div>
+      </div>
+      <div class="sticker-deco blob deco-2">SUPER<br/>SPECIAL</div>
+      <div class="sticker-deco price-tag deco-3" style="background: var(--pink); color: #fff; transform: rotate(10deg);">
+        <div>
+          <div class="num" style="color:#fff;">SMU</div>
+          <div class="label" style="color:#fff;">VIVACE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Click a tile next to the empty hole · arrow keys also work · PEEK to preview the goal</footer>
+</div>
+
+<!-- ============================================================
+     MASTER IMAGES (hidden, referenced by tiles via <use>)
+     Two square 400x400 images: #smiley and #vivace
+     Each tile is an <svg> stretched to N× the cell size with a
+     CSS transform translating it so only its (row,col) slice shows.
+============================================================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Classic smiley face (matches the reference image) -->
+    <symbol id="smiley" viewBox="0 0 400 400">
+      <rect x="0" y="0" width="400" height="400" fill="#fff7d6"/>
+      <circle cx="200" cy="200" r="165" fill="#ffe600" stroke="#111" stroke-width="14"/>
+      <ellipse cx="148" cy="170" rx="14" ry="26" fill="#111"/>
+      <ellipse cx="252" cy="170" rx="14" ry="26" fill="#111"/>
+      <path d="M 110 230 Q 200 340 290 230" fill="none" stroke="#111" stroke-width="13" stroke-linecap="round"/>
+      <path d="M 110 230 L 102 220" stroke="#111" stroke-width="11" stroke-linecap="round"/>
+      <path d="M 290 230 L 298 220" stroke="#111" stroke-width="11" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Vivace banner: loads the actual image file.
+         By default it looks for "vivace.png" in the same folder.
+         Use the UPLOAD button in the UI to pick a different file. -->
+    <symbol id="vivace" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+      <rect x="0" y="0" width="400" height="400" fill="#fff"/>
+      <image id="vivaceImage" href="vivace.png" x="0" y="0" width="400" height="400"
+             preserveAspectRatio="xMidYMid slice"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Win overlay -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+  <div class="modal">
+    <svg id="winPreview" width="96" height="96" viewBox="0 0 400 400" aria-hidden="true">
+      <use href="#vivace"/>
+    </svg>
+    <h2 id="winTitle">PUZZLE SOLVED!</h2>
+    <p id="winStats">Great job!</p>
+    <div class="row">
+      <button id="playAgainBtn" class="sticker">PLAY AGAIN</button>
+      <button id="closeOverlayBtn" class="sticker yellow">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Peek modal (shows the full target image) -->
+<div class="overlay" id="peekOverlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:340px;">
+    <svg id="peekImg" width="260" height="260" viewBox="0 0 400 400" aria-hidden="true">
+      <use href="#vivace"/>
+    </svg>
+    <h2 style="font-size:22px;">GOAL IMAGE</h2>
+    <p>This is what you're building.</p>
+    <div class="row">
+      <button id="closePeekBtn" class="sticker">GOT IT</button>
+    </div>
+  </div>
+</div>
+
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const EMPTY = 0;
+
+  // Mutable game state
+  let SIZE = 4;                  // 3 or 4
+  let TOTAL = SIZE * SIZE;
+  let state = [];
+  let moves = 0;
+  let timerId = null;
+  let startTs = null;
+  let won = false;
+  let imageId = "vivace";        // "vivace" or "smiley"
+
+  const boardEl    = document.getElementById("board");
+  const moveEl     = document.getElementById("moveCount");
+  const timerEl    = document.getElementById("timer");
+  const overlay    = document.getElementById("overlay");
+  const winStats   = document.getElementById("winStats");
+  const winPreview = document.getElementById("winPreview");
+  const peekOverlay = document.getElementById("peekOverlay");
+  const peekImg    = document.getElementById("peekImg");
+  const confettiEl = document.getElementById("confetti");
+
+  function solvedState() {
+    const a = [];
+    for (let i = 1; i <= TOTAL - 1; i++) a.push(i);
+    a.push(EMPTY);
+    return a;
+  }
+
+  function indexToRC(idx) { return { r: Math.floor(idx / SIZE), c: idx % SIZE }; }
+  function rcToIndex(r, c) { return r * SIZE + c; }
+
+  function neighbors(idx) {
+    const { r, c } = indexToRC(idx);
+    const out = [];
+    if (r > 0)        out.push(rcToIndex(r - 1, c));
+    if (r < SIZE - 1) out.push(rcToIndex(r + 1, c));
+    if (c > 0)        out.push(rcToIndex(r, c - 1));
+    if (c < SIZE - 1) out.push(rcToIndex(r, c + 1));
+    return out;
+  }
+
+  function emptyIndex() { return state.indexOf(EMPTY); }
+
+  function render() {
+    boardEl.innerHTML = "";
+    boardEl.classList.toggle("size-3", SIZE === 3);
+    boardEl.classList.toggle("size-4", SIZE === 4);
+
+    const eIdx = emptyIndex();
+    const movableSet = new Set(neighbors(eIdx));
+
+    const pct = 100 * SIZE; // SVG scales to N× cell so each cell shows 1/N slice
+    const step = 100 / SIZE; // % translation per row/col
+
+    for (let i = 0; i < TOTAL; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.index = i;
+
+      const tile = state[i];
+      if (tile === EMPTY) {
+        cell.classList.add("empty");
+      } else {
+        const solvedIdx = tile - 1;
+        const { r, c } = indexToRC(solvedIdx);
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 400 400");
+        svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        svg.classList.add("tile-svg");
+        svg.style.width  = pct + "%";
+        svg.style.height = pct + "%";
+        svg.style.transform = `translate(${-c * step * SIZE / SIZE}%, ${-r * step * SIZE / SIZE}%)`;
+        // Note: SVG dims are NxN of cell, so translating by -col*100% within
+        // the SVG's coordinate moves it one cell's width. Simpler form:
+        svg.style.transform = `translate(${-c * 100 / SIZE * SIZE / SIZE}%, ${-r * 100 / SIZE * SIZE / SIZE}%)`;
+        // Cleanest equivalent: translate by -c * (100/SIZE) percent of the SVG width
+        // which equals -c * 100 percent of one cell. Use direct cell-based units:
+        svg.style.transform = `translate(${-c * 100}%, ${-r * 100}%)`;
+        // ^ above: since SVG is SIZE× the cell width, translating it by
+        //   "100% of the cell" equals 1/SIZE of the SVG. But CSS `%` on transform
+        //   is relative to the *element being transformed*. The SVG's width is
+        //   SIZE * cellWidth, so -100% (of SVG) = -SIZE cells. We want -1 cell,
+        //   so the correct value is -(100/SIZE)%. Fix:
+        svg.style.transform = `translate(${-(c * 100 / SIZE)}%, ${-(r * 100 / SIZE)}%)`;
+
+        const use = document.createElementNS(svgNS, "use");
+        use.setAttribute("href", "#" + imageId);
+        svg.appendChild(use);
+        cell.appendChild(svg);
+
+        if (movableSet.has(i)) cell.classList.add("movable");
+        cell.addEventListener("click", () => attemptMove(i));
+      }
+      boardEl.appendChild(cell);
+    }
+    moveEl.textContent = String(moves);
+  }
+
+  function attemptMove(idx) {
+    if (won) return;
+    const eIdx = emptyIndex();
+    if (!neighbors(eIdx).includes(idx)) return;
+    [state[idx], state[eIdx]] = [state[eIdx], state[idx]];
+    moves++;
+    if (!timerId) startTimer();
+    render();
+    if (isSolved()) onWin();
+  }
+
+  function isSolved() {
+    for (let i = 0; i < TOTAL - 1; i++) {
+      if (state[i] !== i + 1) return false;
+    }
+    return state[TOTAL - 1] === EMPTY;
+  }
+
+  // Easy mode: small number of valid random moves from solved.
+  // Fewer steps on 3x3 since the puzzle is much smaller.
+  function shuffleEasy() {
+    const steps = SIZE === 3 ? 12 : 18;
+    state = solvedState();
+    let last = -1;
+    for (let s = 0; s < steps; s++) {
+      const eIdx = emptyIndex();
+      const opts = neighbors(eIdx).filter(n => n !== last);
+      const pick = opts[Math.floor(Math.random() * opts.length)];
+      [state[pick], state[eIdx]] = [state[eIdx], state[pick]];
+      last = eIdx;
+    }
+    if (isSolved()) shuffleEasy();
+  }
+
+  function resetGame() {
+    state = solvedState();
+    moves = 0;
+    won = false;
+    stopTimer();
+    timerEl.textContent = "00:00";
+    hideOverlay();
+    render();
+  }
+
+  function newGame() {
+    moves = 0;
+    won = false;
+    stopTimer();
+    timerEl.textContent = "00:00";
+    hideOverlay();
+    shuffleEasy();
+    render();
+  }
+
+  function startTimer() {
+    startTs = Date.now();
+    timerId = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTs) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+      const ss = String(elapsed % 60).padStart(2, "0");
+      timerEl.textContent = `${mm}:${ss}`;
+    }, 250);
+  }
+  function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; }
+
+  function onWin() {
+    won = true;
+    stopTimer();
+    winPreview.querySelector("use").setAttribute("href", "#" + imageId);
+    winStats.textContent =
+      `Solved in ${moves} move${moves === 1 ? "" : "s"} · ${timerEl.textContent} · ${SIZE}×${SIZE}`;
+    overlay.classList.add("show");
+    burstConfetti();
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove("show");
+    confettiEl.innerHTML = "";
+  }
+
+  function burstConfetti() {
+    const colors = ["#ec4a8a", "#ffd84d", "#4cba5a", "#e3343a", "#2a3a8c"];
+    confettiEl.innerHTML = "";
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement("span");
+      s.style.left = (Math.random() * 100) + "vw";
+      s.style.top = (-10 - Math.random() * 20) + "px";
+      s.style.background = colors[i % colors.length];
+      s.style.animationDelay = (Math.random() * 0.4) + "s";
+      s.style.animationDuration = (1.2 + Math.random() * 0.9) + "s";
+      s.style.transform = `rotate(${Math.random() * 360}deg)`;
+      s.style.borderRadius = (Math.random() < 0.5) ? "2px" : "50%";
+      confettiEl.appendChild(s);
+    }
+    setTimeout(() => { confettiEl.innerHTML = ""; }, 2400);
+  }
+
+  // Mode + image controls
+  const mode3 = document.getElementById("mode3");
+  const mode4 = document.getElementById("mode4");
+  const imgVivace = document.getElementById("imgVivace");
+  const imgSmiley = document.getElementById("imgSmiley");
+
+  function setMode(size) {
+    SIZE = size;
+    TOTAL = SIZE * SIZE;
+    mode3.classList.toggle("active", size === 3);
+    mode4.classList.toggle("active", size === 4);
+    newGame();
+  }
+  function setImage(id) {
+    imageId = id;
+    imgVivace.classList.toggle("active", id === "vivace");
+    imgSmiley.classList.toggle("active", id === "smiley");
+    peekImg.querySelector("use").setAttribute("href", "#" + id);
+    newGame();
+  }
+
+  mode3.addEventListener("click", () => setMode(3));
+  mode4.addEventListener("click", () => setMode(4));
+  imgVivace.addEventListener("click", () => setImage("vivace"));
+  imgSmiley.addEventListener("click", () => setImage("smiley"));
+
+  document.getElementById("shuffleBtn").addEventListener("click", newGame);
+  document.getElementById("resetBtn").addEventListener("click", resetGame);
+  document.getElementById("playAgainBtn").addEventListener("click", newGame);
+  document.getElementById("closeOverlayBtn").addEventListener("click", hideOverlay);
+
+  document.getElementById("peekBtn").addEventListener("click", () => {
+    peekImg.querySelector("use").setAttribute("href", "#" + imageId);
+    peekOverlay.classList.add("show");
+  });
+  document.getElementById("closePeekBtn").addEventListener("click", () => {
+    peekOverlay.classList.remove("show");
+  });
+
+  // Upload custom image — replaces the Vivace artwork with the picked file
+  const vivaceImage = document.getElementById("vivaceImage");
+  document.getElementById("uploadInput").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      vivaceImage.setAttribute("href", ev.target.result);
+      setImage("vivace");
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (won) return;
+    const eIdx = emptyIndex();
+    const { r, c } = indexToRC(eIdx);
+    let target = null;
+    if (e.key === "ArrowUp"    && r < SIZE - 1) target = rcToIndex(r + 1, c);
+    if (e.key === "ArrowDown"  && r > 0)        target = rcToIndex(r - 1, c);
+    if (e.key === "ArrowLeft"  && c < SIZE - 1) target = rcToIndex(r, c + 1);
+    if (e.key === "ArrowRight" && c > 0)        target = rcToIndex(r, c - 1);
+    if (target !== null) {
+      e.preventDefault();
+      attemptMove(target);
+    }
+  });
+
+  newGame();
+})();
+</script>
+</body>
+</html>
