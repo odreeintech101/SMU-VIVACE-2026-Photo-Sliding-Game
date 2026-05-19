@@ -6,7 +6,7 @@
 <title>SMU Vivace · Sliding Puzzle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Fredoka:wght@500;600;700&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Fredoka:wght@500;600;700&family=Permanent+Marker&family=Fredoka+One&family=Comfortaa:wght@700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet" />
 <style>
   :root {
     --pink:        #ec4a8a;
@@ -41,10 +41,19 @@
 
   body {
     background:
-      linear-gradient(135deg, var(--green-soft) 0%, var(--green-soft) 45%, transparent 45%, transparent 100%),
-      repeating-linear-gradient(0deg,  rgba(255,255,255,0.55) 0 1px, transparent 1px 44px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0 1px, transparent 1px 44px),
-      repeating-conic-gradient(var(--pink-soft) 0% 25%, var(--cream) 0% 50%) 50% / 88px 88px;
+      repeating-linear-gradient(
+        -45deg,
+        #0052ff 0px,
+        #0052ff 80px,
+        #00d9ff 80px,
+        #00d9ff 160px,
+        #ffff00 160px,
+        #ffff00 240px,
+        #ff1493 240px,
+        #ff1493 320px,
+        #00cc44 320px,
+        #00cc44 400px
+      );
     background-attachment: fixed;
   }
 
@@ -65,8 +74,14 @@
   .topbar .vivace {
     font-family: "Bagel Fat One", sans-serif;
     font-size: 22px; letter-spacing: 1px;
+    height: 50px;
+    display: flex;
+    align-items: center;
   }
-  .topbar .vivace sup { font-size: 11px; color: var(--pink); margin-left: 4px; }
+  .topbar .vivace img {
+    height: 40px;
+    width: auto;
+  }
   .topbar .menu { font-size: 14px; letter-spacing: 2px; font-weight: 600; }
 
   .app {
@@ -95,11 +110,23 @@
   }
   .torn h1 {
     margin: 0;
-    font-family: "Permanent Marker", "Bagel Fat One", cursive;
+    font-family: "Fredoka One", "Bagel Fat One", cursive;
     font-size: clamp(28px, 5vw, 44px);
     line-height: 1.05;
     color: var(--navy);
     letter-spacing: 1px;
+  }
+  .torn h1 .slide-word {
+    font-family: "Baloo 2", "Comfortaa", "Fredoka", sans-serif;
+    font-weight: 800;
+    font-size: 1.1em;
+  }
+  .torn h1 .vivace-logo {
+    height: 0.9em;
+    width: auto;
+    vertical-align: middle;
+    margin: 0 2px;
+    display: inline-block;
   }
   .torn h1 .a { color: #2a3a8c; }
   .torn h1 .b { color: var(--red); transform: rotate(-4deg); display: inline-block; }
@@ -107,6 +134,11 @@
   .torn h1 .d { color: var(--pink-deep); }
   .torn h1 .e { color: var(--yellow-deep); }
   .torn h1 .f { color: #6a3aa8; transform: rotate(-2deg); display: inline-block; }
+  .torn h1 .slide-word .a { color: #ff006e; }
+  .torn h1 .slide-word .b { color: #00d9ff; transform: rotate(-4deg); display: inline-block; }
+  .torn h1 .slide-word .c { color: #ffff00; transform: rotate(3deg); display: inline-block; color: var(--navy); }
+  .torn h1 .slide-word .d { color: #ff1493; }
+  .torn h1 .slide-word .e { color: #0052ff; }
   .torn p {
     margin: 6px 0 0;
     font-weight: 500; color: #555; font-size: 14px;
@@ -404,9 +436,9 @@
 
 <div class="topbar">
   <div class="brand">
-    <span class="smu">🐂 SMU</span>
+    <span class="smu">SMU</span>
     <span class="divider"></span>
-    <span class="vivace">VIVACE<sup>'26</sup></span>
+    <span class="vivace"><img src="vivace-logo.svg" alt="VIVACE" /></span>
   </div>
   <div class="menu">MENU ☰</div>
 </div>
@@ -415,9 +447,9 @@
 
   <div class="torn">
     <h1>
-      <span class="a">S</span><span class="b">l</span><span class="c">i</span><span class="d">d</span><span class="e">e</span>
+      <span class="slide-word"><span class="a">S</span><span class="b">l</span><span class="c">i</span><span class="d">d</span><span class="e">e</span></span>
       <span> </span>
-      <span class="f">V</span><span class="a">i</span><span class="b">v</span><span class="c">a</span><span class="d">c</span><span class="e">e</span>
+      <img src="vivace-logo.svg" alt="VIVACE" class="vivace-logo" />
     </h1>
     <p>Sam Loyd's classic — Vivace edition</p>
   </div>
